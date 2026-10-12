@@ -2,45 +2,26 @@ import asyncio
 import logging
 import os
 
-from aiogram.client.session.aiohttp import AiohttpSession
-from aiogram import Bot, Dispatcher, F
-from aiogram.filters import Command
-from aiogram.types import Message
+from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 
-# Загружаем переменные из .env
-load_dotenv()
+from handlers.audio import router as audio_router
+from handlers.commands import router as commands_router
 
-# Включаем логирование, чтобы видеть, что происходит
+# --- Загрузка переменных и логирование ---
+load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-# Создаём бота и диспетчер
+# --- Бот и диспетчер ---
 bot = Bot(token=os.getenv("BOT_TOKEN"))
 dp = Dispatcher()
 
+# 2. ОБЯЗАТЕЛЬНО подключаем роутеры к диспетчеру
+dp.include_router(audio_router)
+dp.include_router(commands_router)
 
-# Хэндлер на команду /start
-@dp.message(Command("start"))
-async def cmd_start(message: Message):
-    await message.answer(
-        f"Привет, {message.from_user.first_name}! 👋\n"
-        f"Я твой первый бот на aiogram 3."
-    )
+# ---------- Точка входа ----------
 
-
-# Хэндлер на команду /help
-@dp.message(Command("help"))
-async def cmd_help(message: Message):
-    await message.answer("Доступные команды:\n/start — приветствие\n/help — эта справка")
-
-
-# Эхо-хэндлер: отвечает на любое текстовое сообщение
-@dp.message(F.text)
-async def echo(message: Message):
-    await message.answer(f"Ты написал: {message.text}")
-
-
-# Точка входа
 async def main():
     print("Бот запущен...")
     await dp.start_polling(bot)
