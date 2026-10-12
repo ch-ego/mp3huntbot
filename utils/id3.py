@@ -3,6 +3,14 @@ import logging
 from mutagen.id3 import ID3
 from mutagen.mp3 import MP3
 from .encoding import try_fix_cp1251
+import re
+
+def is_meaningful(s: str | None) -> bool:
+    """Проверяет, есть ли в строке хоть что-то осмысленное."""
+    if not s:
+        return False
+    # только ?, пробелы и пунктуация — считаем мусором
+    return bool(re.search(r"[A-Za-zА-Яа-я0-9]", s))
 
 def read_id3_tags(audio_bytes: bytes) -> tuple[str | None, str | None]:
     """
@@ -26,6 +34,12 @@ def read_id3_tags(audio_bytes: bytes) -> tuple[str | None, str | None]:
 
     performer = get_text("TPE1")   # Artist
     title = get_text("TIT2")       # Title
+
+    if not is_meaningful(performer):
+        performer = None
+    if not is_meaningful(title):
+        title = None
+
     return performer, title
 
 def read_cover(audio_bytes: bytes) -> bytes | None:

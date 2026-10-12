@@ -17,6 +17,7 @@ async def cmd_help(message: Message):
     await message.answer(
         "Доступные команды:\n"
         "/start — приветствие\n"
+        "/search — поиск\n"
         "/help — эта справка\n\n"
         "Или просто пришли ссылку на .mp3-файл."
     )
