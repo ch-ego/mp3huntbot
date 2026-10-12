@@ -1,6 +1,7 @@
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
+from services.ui_cache import track
 
 router = Router()
 
@@ -14,10 +15,9 @@ async def cmd_start(message: Message):
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
-    await message.answer(
+    sent = await message.answer(
         "Доступные команды:\n"
-        "/start — приветствие\n"
-        "/search — поиск\n"
-        "/help — эта справка\n\n"
-        "Или просто пришли ссылку на .mp3-файл."
+        "/search — найти музыку\n"
+        "/help — эта справка\n"
     )
+    track(message.from_user.id, sent.message_id)

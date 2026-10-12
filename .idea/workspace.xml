@@ -4,17 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="18952ef5-0f1f-43b6-9e3e-8d422b475990" name="Changes" comment="#1 download with link">
-      <change afterPath="$PROJECT_DIR$/handlers/search.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/handlers/states.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/services/audio_sender.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/services/search_cache.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="18952ef5-0f1f-43b6-9e3e-8d422b475990" name="Changes" comment="#2 download with title">
+      <change afterPath="$PROJECT_DIR$/middlewares/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/middlewares/delete_commands.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/services/ui_cache.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bot.py" beforeDir="false" afterPath="$PROJECT_DIR$/bot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/handlers/audio.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/audio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/handlers/commands.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/commands.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/id3.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/id3.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/handlers/search.py" beforeDir="false" afterPath="$PROJECT_DIR$/handlers/search.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,6 +44,8 @@
     "Python.bot.executor": "Run",
     "Python.commands.executor": "Run",
     "Python.id3.executor": "Run",
+    "Python.search.executor": "Run",
+    "Python.site1parser.executor": "Run",
     "Python.test_parser.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -84,12 +83,21 @@
       <option name="project" value="LOCAL" />
       <updated>1791782177731</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="#2 download with title">
+      <option name="closed" value="true" />
+      <created>1791788919838</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1791788919838</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="init bot" />
     <MESSAGE value="#1 download with link" />
-    <option name="LAST_COMMIT_MESSAGE" value="#1 download with link" />
+    <MESSAGE value="#2 download with title" />
+    <option name="LAST_COMMIT_MESSAGE" value="#2 download with title" />
   </component>
 </project>

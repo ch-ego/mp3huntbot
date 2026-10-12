@@ -51,7 +51,7 @@ def build_keyboard(
             callback_data=f"s:pg:{search_id}:{page - 1}",
         ))
     nav.append(InlineKeyboardButton(
-        text=f"{page + 1}/{total_pages}",
+        text=f"{page + 1}/{total_pages} ✖️",
         callback_data="s:noop",
     ))
     if page < total_pages - 1:
@@ -100,13 +100,14 @@ async def cmd_search(message: Message, state: FSMContext):
     query = message.text.removeprefix("/search").strip()
 
     if not query:
-        await message.answer(
+        prompt = await message.answer(
             "🔍 Введи название трека — я поищу.\n"
             "Например: <i>radiohead no surprises</i>\n\n"
             "Для отмены: /cancel",
             parse_mode="HTML",
         )
         await state.set_state(SearchStates.waiting_query)
+        await state.update_data(prompt_id=prompt.message_id)
         return
 
     await state.clear()
@@ -115,14 +116,39 @@ async def cmd_search(message: Message, state: FSMContext):
 
 @router.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
+    data = await state.get_data()
+    prompt_id = data.get("prompt_id")
     await state.clear()
-    await message.answer("Отменено. Если захочешь — снова /search")
+
+    # Удаляем приглашение «Введи название трека»
+    if prompt_id:
+        try:
+            await message.bot.delete_message(message.chat.id, prompt_id)
+        except Exception:
+            pass
 
 
 @router.message(SearchStates.waiting_query)
 async def on_query_entered(message: Message, state: FSMContext):
+    data = await state.get_data()
+    prompt_id = data.get("prompt_id")
+
     query = message.text.strip()
     await state.clear()
+
+    # Убираем приглашение «Введи название трека»
+    if prompt_id:
+        try:
+            await message.bot.delete_message(message.chat.id, prompt_id)
+        except Exception:
+            pass
+
+    # Заодно убираем сообщение с самим запросом, чтобы в чате остался только результат
+    try:
+        await message.delete()
+    except Exception:
+        pass
+
     await run_search(message, query)
 
 
@@ -171,5 +197,10 @@ async def on_track_click(callback: CallbackQuery):
     )
 
 @router.callback_query(F.data == "s:noop")
-async def on_noop(callback: CallbackQuery):
+async def on_close_menu(callback: CallbackQuery):
+    """Кнопка с номером страницы — закрывает меню поиска."""
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
     await callback.answer()
