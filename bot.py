@@ -10,12 +10,21 @@ from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.fsm.storage.memory import MemoryStorage
 from middlewares.delete_commands import DeleteCommandsMiddleware
 
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.client.telegram import TelegramAPIServer
+
 # --- Загрузка переменных и логирование ---
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
 # --- Бот и диспетчер ---
-bot = Bot(token=os.getenv("BOT_TOKEN"))
+api_base = os.getenv("API_BASE")
+
+if api_base:
+    session = AiohttpSession(api=TelegramAPIServer.from_base(api_base))
+    bot = Bot(token=os.getenv("BOT_TOKEN"), session=session)
+else:
+    bot = Bot(token=os.getenv("BOT_TOKEN"))
 
 dp = Dispatcher(storage=MemoryStorage())
 dp.message.outer_middleware(DeleteCommandsMiddleware())
