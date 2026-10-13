@@ -12,6 +12,7 @@ from handlers.states import SearchStates
 from services.audio_sender import send_audio_from_url
 from services.search_cache import get_tracks, save_tracks
 from services.site1parser import search
+from services.limits import check_rate_limit
 
 router = Router()
 
@@ -178,9 +179,17 @@ async def on_track_click(callback: CallbackQuery):
         await callback.answer(STALE_MSG, show_alert=True)
         return
 
+    # Проверка лимита — до всего остального
+    allowed, wait = check_rate_limit(callback.from_user.id)
+    if not allowed:
+        await callback.answer(
+            f"Слишком много запросов. Подожди {wait} сек.",
+            show_alert=True,
+        )
+        return
+
     await callback.answer("Скачиваю...")
 
-    # Удаляем меню целиком — оно своё отработало
     try:
         await callback.message.delete()
     except Exception:

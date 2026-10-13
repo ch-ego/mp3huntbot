@@ -5,3 +5,7 @@ __pycache__/
 .idea/
 config.py
 services/site1parser.py
+
+.dockerignore
+Dockerfile
+docker-compose.yml

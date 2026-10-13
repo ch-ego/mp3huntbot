@@ -6,12 +6,15 @@ import aiohttp
 from aiogram.types import BufferedInputFile, Message
 
 from config import SITE1_HEADERS
+from services.limits import download_semaphore
 from utils.filename import extract_filename, split_performer_title
 from utils.id3 import read_cover, read_id3_tags
 
 MAX_AUDIO_SIZE = 50 * 1024 * 1024    # 50 МБ — лимит Telegram на аудио
 MAX_COVER_SIZE = 200 * 1024          # 200 КБ — лимит Telegram на обложку
 
+
+# ---------- Вспомогательные функции ----------
 
 async def _download_audio(url: str) -> tuple[bytes, str] | None:
     """Скачивает MP3. Возвращает (байты, имя файла) или None при ошибке."""
@@ -72,6 +75,8 @@ def _resolve_cover(audio_bytes: bytes, cover_bytes: bytes | None) -> bytes | Non
     return None
 
 
+# ---------- Публичная функция ----------
+
 async def send_audio_from_url(
     message: Message,
     url: str,
@@ -79,7 +84,21 @@ async def send_audio_from_url(
     title: str | None = None,
     cover_url: str | None = None,
 ) -> None:
-    """Скачивает MP3 по URL и отправляет его в чат."""
+    """Скачивает MP3 по URL и отправляет в чат. Ограничена семафором."""
+    async with download_semaphore:
+        await _send_audio_inner(message, url, performer, title, cover_url)
+
+
+# ---------- Внутренняя логика ----------
+
+async def _send_audio_inner(
+    message: Message,
+    url: str,
+    performer: str | None,
+    title: str | None,
+    cover_url: str | None,
+) -> None:
+    """Скачивает MP3, читает метаданные, отправляет аудио с обложкой."""
     result = await _download_audio(url)
     if not result:
         await message.answer(
