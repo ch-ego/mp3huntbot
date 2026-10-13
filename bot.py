@@ -9,18 +9,13 @@ from handlers import audio, commands, search
 from aiogram.types import BotCommand, BotCommandScopeDefault
 from aiogram.fsm.storage.memory import MemoryStorage
 from middlewares.delete_commands import DeleteCommandsMiddleware
-from aiogram.client.session.aiohttp import AiohttpSession
 
 # --- Загрузка переменных и логирование ---
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-# Читаем адрес прокси из переменных окружения (по умолчанию - локальный)
-proxy_url = os.getenv("PROXY_URL", "socks5://127.0.0.1:1443")
-
 # --- Бот и диспетчер ---
-session = AiohttpSession(proxy=proxy_url)
-bot = Bot(token=os.getenv("BOT_TOKEN"), session=session)
+bot = Bot(token=os.getenv("BOT_TOKEN"))
 
 dp = Dispatcher(storage=MemoryStorage())
 dp.message.outer_middleware(DeleteCommandsMiddleware())
