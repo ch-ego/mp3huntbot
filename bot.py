@@ -21,7 +21,10 @@ logging.basicConfig(level=logging.INFO)
 api_base = os.getenv("API_BASE")
 
 if api_base:
-    session = AiohttpSession(api=TelegramAPIServer.from_base(api_base))
+    session = AiohttpSession(
+        api=TelegramAPIServer.from_base(api_base),
+        timeout=120
+    )
     bot = Bot(token=os.getenv("BOT_TOKEN"), session=session)
 else:
     bot = Bot(token=os.getenv("BOT_TOKEN"))
@@ -45,9 +48,14 @@ async def set_bot_commands(bot: Bot):
 # ---------- Точка входа ----------
 
 async def main():
+    print("Бот запущен...")
+    # Запускаем отправку команд в фоне
+    asyncio.create_task(set_bot_commands(bot))
+
     try:
-        await set_bot_commands(bot)
         await dp.start_polling(bot)
+    except Exception as e:
+        print(f"Ошибка в работе бота: {e}")
     finally:
         await bot.session.close()
 

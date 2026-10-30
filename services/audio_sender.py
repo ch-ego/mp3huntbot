@@ -2,12 +2,10 @@
 
 import logging
 
-import aiohttp
 from aiogram.types import BufferedInputFile, Message
-
-from config import SITE1_HEADERS
 from services.limits import download_semaphore
-from utils.filename import extract_filename, split_performer_title
+from sources.registry import get_source
+from utils.filename import  split_performer_title
 from utils.id3 import read_cover, read_id3_tags
 
 MAX_AUDIO_SIZE = 50 * 1024 * 1024    # 50 МБ — лимит Telegram на аудио
@@ -15,35 +13,61 @@ MAX_COVER_SIZE = 200 * 1024          # 200 КБ — лимит Telegram на о�
 
 
 # ---------- Вспомогательные функции ----------
+async def _send_audio_inner(message: Message, track: dict) -> None:
+    """Скачивает MP3 через нужный источник, читает метаданные, отправляет аудио с обложкой."""
 
-async def _download_audio(url: str) -> tuple[bytes, str] | None:
-    """Скачивает MP3. Возвращает (байты, имя файла) или None при ошибке."""
-    async with aiohttp.ClientSession(headers=SITE1_HEADERS) as session:
-        async with session.get(url) as resp:
-            if resp.status != 200:
-                return None
-            content_type = resp.headers.get("Content-Type", "")
-            if "audio" not in content_type:
-                return None
-            filename = extract_filename(url, resp.headers)
-            return await resp.read(), filename
+    # 1. Определяем, с какого сайта трек (по умолчанию site1)
+    source_id = track.get("source", "site1")
+    source = get_source(source_id)
 
+    # 2. Просим источник скачать аудио
+    result = await source.download_audio(track["url"])
+    if not result:
+        await message.answer("Не удалось скачать файл с сайта. Возможно, он временно недоступен.")
+        return
 
-async def _download_cover(cover_url: str) -> bytes | None:
-    """Скачивает обложку по URL. None, если не получилось или она слишком большая."""
-    try:
-        async with aiohttp.ClientSession(headers=SITE1_HEADERS) as session:
-            async with session.get(cover_url) as resp:
-                if resp.status != 200:
-                    return None
-                data = await resp.read()
-                if len(data) > MAX_COVER_SIZE:
-                    logging.info("Обложка слишком большая: %d байт", len(data))
-                    return None
-                return data
-    except Exception:
-        logging.exception("Не удалось скачать обложку")
-        return None
+    audio_bytes, filename = result
+
+    if len(audio_bytes) > MAX_AUDIO_SIZE:
+        await message.answer("Файл больше 50 МБ, Telegram не примет 😔")
+        return
+
+    # 3. Просим источник скачать обложку (если ссылка на неё есть)
+    cover_bytes = None
+    if track.get("cover_url"):
+        cover_bytes = await source.download_cover(track["cover_url"])
+
+    # 4. Если обложки нет, пробуем достать из ID3
+    cover_bytes = _resolve_cover(audio_bytes, cover_bytes)
+
+    # 5. Определяем performer и title
+    # Берем их из словаря track (если они там есть), иначе достаем из ID3
+    performer, title = _resolve_metadata(
+        audio_bytes,
+        filename,
+        track.get("artist"),
+        track.get("title")
+    )
+
+    # 6. Формируем файлы для Telegram
+    thumbnail = (
+        BufferedInputFile(cover_bytes, filename="cover.jpg")
+        if cover_bytes else None
+    )
+    audio = BufferedInputFile(audio_bytes, filename=filename)
+
+    logging.info(
+        "Отправляю: filename=%r, performer=%r, title=%r, cover=%s bytes",
+        filename, performer, title, len(cover_bytes) if cover_bytes else 0,
+    )
+
+    # 7. Отправляем
+    await message.answer_audio(
+        audio=audio,
+        title=title or None,
+        performer=performer or None,
+        thumbnail=thumbnail,
+    )
 
 
 def _resolve_metadata(
@@ -75,62 +99,10 @@ def _resolve_cover(audio_bytes: bytes, cover_bytes: bytes | None) -> bytes | Non
     return None
 
 
-# ---------- Публичная функция ----------
-
 async def send_audio_from_url(
     message: Message,
-    url: str,
-    performer: str | None = None,
-    title: str | None = None,
-    cover_url: str | None = None,
+    track: dict,
 ) -> None:
     """Скачивает MP3 по URL и отправляет в чат. Ограничена семафором."""
     async with download_semaphore:
-        await _send_audio_inner(message, url, performer, title, cover_url)
-
-
-# ---------- Внутренняя логика ----------
-
-async def _send_audio_inner(
-    message: Message,
-    url: str,
-    performer: str | None,
-    title: str | None,
-    cover_url: str | None,
-) -> None:
-    """Скачивает MP3, читает метаданные, отправляет аудио с обложкой."""
-    result = await _download_audio(url)
-    if not result:
-        await message.answer(
-            "Не удалось скачать. Возможно, ссылка требует премиум-доступа."
-        )
-        return
-
-    audio_bytes, filename = result
-
-    if len(audio_bytes) > MAX_AUDIO_SIZE:
-        await message.answer("Файл больше 50 МБ, Telegram не примет 😔")
-        return
-
-    performer, title = _resolve_metadata(audio_bytes, filename, performer, title)
-
-    cover_bytes = await _download_cover(cover_url) if cover_url else None
-    cover_bytes = _resolve_cover(audio_bytes, cover_bytes)
-
-    thumbnail = (
-        BufferedInputFile(cover_bytes, filename="cover.jpg")
-        if cover_bytes else None
-    )
-
-    logging.info(
-        "Отправляю: filename=%r, performer=%r, title=%r, cover=%s bytes",
-        filename, performer, title, len(cover_bytes) if cover_bytes else 0,
-    )
-
-    audio = BufferedInputFile(audio_bytes, filename=filename)
-    await message.answer_audio(
-        audio=audio,
-        title=title or None,
-        performer=performer or None,
-        thumbnail=thumbnail,
-    )
+        await _send_audio_inner(message, track)

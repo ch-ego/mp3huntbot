@@ -11,7 +11,7 @@ from aiogram.types import (
 from handlers.states import SearchStates
 from services.audio_sender import send_audio_from_url
 from services.search_cache import get_tracks, save_tracks
-from services.site1parser import search
+from sources.registry import get_source
 from services.limits import check_rate_limit
 
 router = Router()
@@ -76,8 +76,9 @@ def build_header(query: str, tracks: list[dict], page: int) -> str:
 
 async def run_search(message: Message, query: str) -> None:
     status_msg = await message.answer(f"🔍 Ищу: {query}")
+    source = get_source("site1")
 
-    tracks = await search(query, limit=MAX_TRACKS)
+    tracks = await source.search(query, limit=MAX_TRACKS)
 
     try:
         await status_msg.delete()
@@ -197,13 +198,7 @@ async def on_track_click(callback: CallbackQuery):
 
     track = tracks[idx]
     await callback.message.answer(f"🎵 {track['artist']} – {track['title']}")
-    await send_audio_from_url(
-        callback.message,
-        track["url"],
-        performer=track["artist"],
-        title=track["title"],
-        cover_url=track.get("cover_url"),
-    )
+    await send_audio_from_url(callback.message, track)
 
 @router.callback_query(F.data == "s:noop")
 async def on_close_menu(callback: CallbackQuery):

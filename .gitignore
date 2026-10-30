@@ -4,7 +4,6 @@ __pycache__/
 *.pyc
 .idea/
 config.py
-services/site1parser.py
 
 .dockerignore
 Dockerfile
